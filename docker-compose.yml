@@ -1,0 +1,16 @@
+version: "3.3"
+services:
+    apache-camel-engine:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: apache-camel-engine
+        restart: always
+        network_mode: "host"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - apache-camel-engine_log:/var/log
+            - apache-camel-engine_data:/data
+volumes:
+    apache-camel-engine_log:
+    apache-camel-engine_data:
