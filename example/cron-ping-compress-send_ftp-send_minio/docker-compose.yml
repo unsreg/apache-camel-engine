@@ -1,0 +1,16 @@
+version: "3.3"
+services:
+    apache-camel-ping:
+        build:
+            context: ..
+            dockerfile: Dockerfile
+        container_name: apache-camel-ping
+        restart: always
+        network_mode: "host"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - apache-camel-ping_log:/var/log
+            - apache-camel-ping_data:/data
+volumes:
+    apache-camel-ping_log:
+    apache-camel-ping_data:
