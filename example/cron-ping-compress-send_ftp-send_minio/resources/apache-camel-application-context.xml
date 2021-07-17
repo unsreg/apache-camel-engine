@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://camel.apache.org/schema/spring
+        https://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+        <propertyPlaceholder
+                id="apache-camel-properties"
+                location="file:apache-camel.properties"/>
+        <route id="cron-tab-executor">
+            <from uri="cron:tab?schedule={{cron.expression}}"/>
+            <to uri="direct:cron-tab-executor-event"/>
+            <log message="cron-tab-executor is executed"/>
+        </route>
+        <route id="process-executor" streamCache="true">
+            <from uri="direct:cron-tab-executor-event"/>
+            <to uri="exec:ping?timeout={{process.exec.timeout}}&amp;args={{ping-address}}"/>
+            <to uri="direct:process-executor-out-event"/>
+            <log message="process-executor is executed"/>
+        </route>
+        <route id="data-compressor" streamCache="true">
+            <from uri="direct:process-executor-out-event"/>
+            <marshal>
+                <zipfile usingIterator="true" allowEmptyDirectory="true"/>
+            </marshal>
+            <to uri="direct:data-compressor-out-event"/>
+            <log message="data-compressor is executed"/>
+        </route>
+        <route id="data-transfer" streamCache="true">
+            <from uri="direct:data-compressor-out-event"/>
+            <setHeader name="CamelFileName">
+                <csimple>bckp_${date:now:yyyy-MM-dd'T'HH.mm.ss}.zip</csimple>
+            </setHeader>
+            <to uri="ftp://user@host:port/path?password=RAW(your-strong-password)&amp;fileName=${in.header.CamelFileName}"/>
+            <to uri="minio://bucket-name?endpoint=https://host:port&amp;accessKey=access-key&amp;secretKey=access-secret&amp;keyName=${in.header.CamelFileName}"/>
+            <log message="data-transfer is executed"/>
+        </route>
+    </camelContext>
+</beans>

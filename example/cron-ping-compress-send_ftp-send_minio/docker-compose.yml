@@ -2,7 +2,7 @@ version: "3.3"
 services:
     apache-camel-ping:
         build:
-            context: ..
+            context: .
             dockerfile: Dockerfile
         container_name: apache-camel-ping
         restart: always
