@@ -1,0 +1,21 @@
+version: "3.3"
+services:
+    backup-mysql:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: backup-mysql
+        restart: always
+        dns:
+            - 1.1.1.1
+            - 8.8.8.8
+            - 4.4.4.4
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - backup-mysql_log:/var/log
+            - backup-mysql_data:/data
+            - backup-mysql_app:/opt/apache-camel-engine
+volumes:
+    backup-mysql_log:
+    backup-mysql_data:
+    backup-mysql_app:

@@ -1,0 +1,8 @@
+deb http://151.101.14.132/debian/ stretch main
+deb-src  http://151.101.14.132/debian/ stretch main
+
+deb http://151.101.14.132/debian/ stretch-updates main
+deb-src  http://151.101.14.132/debian/ stretch-updates main
+
+deb http://151.101.14.132/debian-security/ stretch/updates main
+deb-src http://151.101.14.132/debian-security/ stretch/updates main

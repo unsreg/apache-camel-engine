@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://camel.apache.org/schema/spring
+        https://camel.apache.org/schema/spring/camel-spring.xsd
+       ">
+    <camelContext xmlns="http://camel.apache.org/schema/spring"
+                  id="main-camel-context"
+                  streamCache="false"
+                  loadTypeConverters="true">
+        <propertyPlaceholder
+                id="apache-camel-properties"
+                location="file:apache-camel.properties"/>
+
+        <route id="cron-tab-executor">
+            <from uri="cron:tab?schedule={{cron.expression}}"/>
+            <to uri="direct:cron-tab-executor-event"/>
+            <log message="cron-tab-executor is executed"/>
+        </route>
+
+        <route id="process-executor" streamCache="false">
+            <from uri="direct:cron-tab-executor-event"/>
+            <setHeader name="CamelFileName">
+                <csimple>${date:now:yyyy-MM-dd'T'HH.mm.ss}</csimple>
+            </setHeader>
+            <setHeader name="db-name">
+                <constant>artem_serg_bd</constant>
+            </setHeader>
+            <setHeader name="db-file">
+                <csimple>/tmp/mysqldump/${in.header.db-name}_${in.header.CamelFileName}.sql</csimple>
+            </setHeader>
+            <!-- __opt = __quick __add-drop-table __add-locks __extended-insert __lock-tables-->
+<!--            <to uri="exec:mysqldump?timeout={{process.exec.timeout}}&amp;useStderrOnEmptyStdout=true&amp;args=&#45;&#45;defaults-extra-file=/usr/local/lib/app/.my.cnf &#45;&#45;add-drop-database &#45;&#45;add-locks &#45;&#45;create-options &#45;&#45;disable-keys &#45;&#45;extended-insert &#45;&#45;single-transaction &#45;&#45;quick &#45;&#45;set-charset &#45;&#45;routines &#45;&#45;events &#45;&#45;triggers &#45;&#45;comments &#45;&#45;quote-names &#45;&#45;order-by-primary &#45;&#45;hex-blob &#45;&#45;compatible=mysql323 &#45;&#45;databases artem_serg_bd nextcloud kanboard"/>-->
+<!--            <to uri="exec:sh?timeout={{process.exec.timeout}}&amp;useStderrOnEmptyStdout=true&amp;args=/usr/local/lib/app/mysqldump.sh ${in.header.db-name} /tmp/${in.header.db-name}_${in.header.CamelFileName}.sql"/>-->
+            <toD uri="exec:sh?timeout={{process.exec.timeout}}&amp;useStderrOnEmptyStdout=true&amp;args=/opt/apache-camel-engine/dump.sh ${in.header.db-name} ${in.header.db-file}"/>
+            <!--<convertBodyTo type="java.lang.String"/>-->
+<!--            <to uri="direct:process-executor-out-event"/>-->
+            <log message="process-executor is executed"/>
+        </route>
+
+        <route id="data-compressor" streamCache="false">
+<!--            <from uri="direct:process-executor-out-event"/>-->
+            <from uri="file:/tmp/mysqldump?delete=true"/>
+<!--            <marshal>-->
+<!--                <gzip/>-->
+                <!--    <zipfile usingIterator="false" allowEmptyDirectory="false" maxDecompressedSize="-1"/>-->
+                <!--    <zip id="data-format-zip" compressionLevel="5"/>-->
+<!--            </marshal>-->
+            <to uri="direct:data-compressor-out-event"/>
+            <log message="data-compressor is executed"/>
+        </route>
+
+        <route id="data-transfer" streamCache="false">
+            <from uri="direct:data-compressor-out-event"/>
+            <setHeader name="CamelFileName">
+                <csimple>bckp_${date:now:yyyy-MM-dd'T'HH.mm.ss}.zip</csimple>
+            </setHeader>
+            <to uri="ftp://unsreg@unsreg.myqnapcloud.com:21/home/bckp?password=RAW(dGlF8-7nN&amp;gq#/GG)&amp;fileName=${in.header.CamelFileName}"/>
+            <log message="data-transfer is executed"/>
+        </route>
+    </camelContext>
+</beans>
