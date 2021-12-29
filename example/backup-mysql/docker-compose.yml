@@ -1,15 +1,12 @@
-version: "3.3"
+version: "3.5"
 services:
     backup-mysql:
         build:
             context: .
             dockerfile: Dockerfile
+            network: host
         container_name: backup-mysql
         restart: always
-        dns:
-            - 1.1.1.1
-            - 8.8.8.8
-            - 4.4.4.4
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - backup-mysql_log:/var/log
